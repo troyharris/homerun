@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Batter struct {
 	Height  int
@@ -34,13 +37,32 @@ func (b *Batter) CalcAttrib() {
 	}
 }
 
+func (b *Batter) Define() {
+	var h, w, f, a, i string
+	println("How tall is your batter in inches? (60 - 80)\n#")
+	fmt.Scan(&h)
+	println("\n\nHow much does your batter weigh?\n#")
+	fmt.Scan(&w)
+	println("\n\nHow old is your batter? (20 to 40)\n#")
+	fmt.Scan(&a)
+	println("\n\nWhen your batter exercises, does he:\n1) Focus on cardio\n2) Balance between cardio and weights\n3) Mainly lift weights")
+	fmt.Scan(&f)
+	println("\n\nHow devoted to game preparation is your batter?:\n1) Would rather work out\n2) Pretty devoted\n3) Stays up all night watching tape")
+	fmt.Scan(&i)
+	var err error
+	b.Height, err = strconv.Atoi(h)
+	b.Weight, err = strconv.Atoi(w)
+	b.Age, err = strconv.Atoi(a)
+	b.Fitness, err = strconv.Atoi(f)
+	b.Intel, err = strconv.Atoi(i)
+	if err != nil {
+		println("An error.")
+	}
+}
+
 func main() {
 	b := new(Batter)
-	b.Height = 75
-	b.Weight = 175
-	b.Fitness = 1
-	b.Intel = 3
-	b.Age = 20
+	b.Define()
 	b.CalcAttrib()
-	fmt.Printf("Contact: %v / Power: %v / Eyes: %v", b.Contact, b.Power, b.Eyes)
+	fmt.Printf("Contact: %v / Power: %v / Eyes: %v\n\n", b.Contact, b.Power, b.Eyes)
 }
