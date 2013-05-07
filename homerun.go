@@ -2,8 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/troyharris/newrand"
 	"strconv"
 )
+
+var homeruns int = 0
+
+type FieldLoc struct {
+	Depth int
+	Side  int
+}
 
 type Batter struct {
 	Height  int
@@ -14,6 +22,13 @@ type Batter struct {
 	Contact int
 	Eyes    int
 	Power   int
+}
+
+type Ball struct {
+	Speed    int
+	Acc      int
+	Movement int
+	HitLoc   FieldLoc
 }
 
 func (b *Batter) CalcAttrib() {
@@ -60,9 +75,116 @@ func (b *Batter) Define() {
 	}
 }
 
+func (b *Ball) Pitch() {
+	b.Speed = newrand.Intr(70, 99)
+	b.Acc = newrand.Intr(55, 100)
+	b.Movement = newrand.Intr(40, 100) - (b.Speed / 2)
+}
+
+func (b Batter) Swing(ball *Ball) (string, *FieldLoc) {
+	var result string
+	location := new(FieldLoc)
+	checkSwingPer := b.Eyes - ball.Acc + 70
+	if checkSwingPer > 99 {
+		checkSwingPer = 99
+	}
+	if ball.Acc < 70 && newrand.Hit(checkSwingPer) {
+		result = "ball"
+		return result, location
+	}
+	contactPer := (b.Contact + b.Eyes + newrand.Intr(80, 100)) - ((100 - ball.Acc) + ball.Movement + ball.Speed)
+	if contactPer > 99 {
+		contactPer = 99
+	}
+	if newrand.Hit(contactPer) {
+		result = "hit"
+		var d int
+		powerLvl := int((b.Power + contactPer + newrand.Intr(1, 50)) / 2)
+		switch {
+		case powerLvl < 30:
+			d = 0
+		case powerLvl < 60:
+			d = 1
+		case powerLvl < 80:
+			d = 2
+		default:
+			d = 3
+		}
+		direction := newrand.Intr(0, 4)
+		location.Depth = d
+		location.Side = direction
+		return result, location
+	} else {
+		result = "strike"
+		return result, location
+	}
+	return result, location
+}
+
+func (b *Ball) Hit(l *FieldLoc) string {
+	b.HitLoc.Depth = l.Depth
+	b.HitLoc.Side = l.Side
+	var dir string
+	var loc string
+	var result string
+	switch b.HitLoc.Depth {
+	case 0:
+		dir = "foul"
+	case 1:
+		dir = "left field"
+	case 2:
+		dir = "center field"
+	case 3:
+		dir = "right field"
+	case 4:
+		dir = "foul"
+	}
+	switch b.HitLoc.Side {
+	case 0:
+		loc = "shallow"
+	case 1:
+		loc = "middle"
+	case 2:
+		loc = "deep"
+	case 3:
+		loc = "homerun"
+	}
+	if dir == "foul" {
+		result = "Ball hit foul"
+		return result
+	}
+	if loc == "homerun" {
+		result = "It's a home run!"
+		homeruns++
+		return result
+	}
+	result = fmt.Sprintf("Ball hit to %s %s.", loc, dir)
+	return result
+}
+
+func play(bt *Batter, bl *Ball) string {
+	var msg string
+	bl.Pitch()
+	result, location := bt.Swing(bl)
+	switch result {
+	case "ball":
+		msg = "Batter lays off that pitch. Ball"
+	case "strike":
+		msg = "A big swing and a miss"
+	case "hit":
+		msg = bl.Hit(location)
+	}
+	return msg
+}
+
 func main() {
 	b := new(Batter)
 	b.Define()
 	b.CalcAttrib()
 	fmt.Printf("Contact: %v / Power: %v / Eyes: %v\n\n", b.Contact, b.Power, b.Eyes)
+	ball := new(Ball)
+	for i := 0; i < 50; i++ {
+		fmt.Println(play(b, ball))
+	}
+	fmt.Printf("Home runs: %v", homeruns)
 }
