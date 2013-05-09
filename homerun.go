@@ -7,6 +7,9 @@ import (
 )
 
 var homeruns int = 0
+var pitches int = 0
+var outs int = 0
+var powSwing int = 3
 
 type FieldLoc struct {
 	Depth int
@@ -99,23 +102,32 @@ func (b Batter) Swing(ball *Ball) (string, *FieldLoc) {
 	if newrand.Hit(contactPer) {
 		result = "hit"
 		var d int
-		powerLvl := int((b.Power + contactPer + newrand.Intr(1, 50)) / 2)
+		powerLvl := ((float32(b.Power)) + (float32(contactPer)) + float32(newrand.Intr(1, 50))) / 2
 		switch {
-		case powerLvl < 30:
+		case powerLvl < 35:
 			d = 0
-		case powerLvl < 60:
+		case powerLvl < 65:
 			d = 1
 		case powerLvl < 80:
 			d = 2
 		default:
 			d = 3
 		}
-		direction := newrand.Intr(0, 4)
+		dirStart := 0
+		dirEnd := 4
+		if contactPer > 75 {
+			dirStart = 1
+		}
+		if newrand.Hit(b.Eyes) {
+			dirEnd = 3
+		}
+		direction := newrand.Intr(dirStart, dirEnd)
 		location.Depth = d
 		location.Side = direction
 		return result, location
 	} else {
 		result = "strike"
+		outs++
 		return result, location
 	}
 	return result, location
@@ -127,7 +139,7 @@ func (b *Ball) Hit(l *FieldLoc) string {
 	var dir string
 	var loc string
 	var result string
-	switch b.HitLoc.Depth {
+	switch b.HitLoc.Side {
 	case 0:
 		dir = "foul"
 	case 1:
@@ -139,7 +151,7 @@ func (b *Ball) Hit(l *FieldLoc) string {
 	case 4:
 		dir = "foul"
 	}
-	switch b.HitLoc.Side {
+	switch b.HitLoc.Depth {
 	case 0:
 		loc = "shallow"
 	case 1:
@@ -148,6 +160,9 @@ func (b *Ball) Hit(l *FieldLoc) string {
 		loc = "deep"
 	case 3:
 		loc = "homerun"
+	}
+	if dir != "ball" && loc != "homerun" {
+		outs++
 	}
 	if dir == "foul" {
 		result = "Ball hit foul"
@@ -177,14 +192,31 @@ func play(bt *Batter, bl *Ball) string {
 	return msg
 }
 
+func atBat(bt *Batter, bl *Ball) string {
+	var s string
+	fmt.Printf("\nThe pitcher winds up. Here comes the pitch. You: 1) take a fluid swing 2) swing for the fences (%v left)", powSwing)
+	fmt.Scan(&s)
+	switch s {
+	case "1":
+		return play(bt, bl)
+	case "2":
+		return play(bt, bl)
+	default:
+		atBat(bt, bl)
+	}
+	return ""
+}
+
 func main() {
 	b := new(Batter)
 	b.Define()
 	b.CalcAttrib()
 	fmt.Printf("Contact: %v / Power: %v / Eyes: %v\n\n", b.Contact, b.Power, b.Eyes)
 	ball := new(Ball)
-	for i := 0; i < 50; i++ {
-		fmt.Println(play(b, ball))
+	for outs = 0; outs < 10; pitches++ {
+		fmt.Printf("\nThere are %v outs.\n", outs)
+		fmt.Println("")
+		fmt.Println(atBat(b, ball))
 	}
 	fmt.Printf("Home runs: %v", homeruns)
 }
